@@ -12,7 +12,10 @@ FWorld world;
 
 //menu principal
 PImage startButton;
+PImage startBackground;
 boolean Menu = true;
+PFont font; 
+int frameCountOffset = 0;
 
 //cargar datos
 float angulo = 0;
@@ -43,7 +46,8 @@ void setup() {
   //size(1200, 600);
   size(1200, 600,P2D);
   
-  startButton = loadImage("1.png");
+  startBackground = loadImage("animacion/FondoMenu.png");
+  startButton = loadImage("animacion/play1.png");
   
   // fondo y blur
   backgroundImage = loadImage("animacion/nubes/CLOUDS.jpeg");
@@ -121,14 +125,41 @@ void draw() {
   //println(gameover);
   
   if (Menu) {
-    image(backgroundImage, 0, 0, width, height);
+    //image(backgroundImage, 0, 0, width, height);
+    image(startBackground, width / 2 - startBackground.width / 2, height / 2 - startBackground.height / 2);
+    startButton.resize(100, 0);
     image(startButton, width / 2 - startButton.width / 2, height / 2 - startButton.height / 2);
-
+    frameCountOffset += 1; // Adjust the speed of animation
+    float circleRadius = 200; // Adjust the radius as needed
+    float circleCenterX = width / 2;
+    float circleCenterY = height / 2;
+    
+    String titleText = "COMO SE LLAMARA ESTE JUEGO NI IDEA";
+    
+    float angleStep = TWO_PI / titleText.length();
+    
+    for (int i = 0; i < titleText.length(); i++) {
+      char letter = titleText.charAt(i);
+      float angle = i * angleStep + radians(frameCountOffset); 
+      float x = circleCenterX + cos(angle) * circleRadius;
+      float y = circleCenterY + sin(angle) * circleRadius;
+      pushMatrix();
+      translate(x, y);
+      rotate(angle + PI / 2); 
+      //textFont(font); 
+      textSize(36); 
+      fill(0);
+      text(letter, 0, 0);
+      popMatrix();
+    }
+    
     if (mouseX >= width / 2 - startButton.width / 2 &&
         mouseX <= width / 2 + startButton.width / 2 &&
         mouseY >= height / 2 - startButton.height / 2 &&
-        mouseY <= height / 2 + startButtone.height / 2) {
-      cursor(HAND); // Change cursor to a hand when over the button
+        mouseY <= height / 2 + startButton.height / 2) {
+        cursor(HAND); 
+        fill(0); 
+        text("HAZ CLICK EN CUALQUIER PARTE PARA COMENZAR", 200,600);
       if (mousePressed) {
         Menu = false;
       }
