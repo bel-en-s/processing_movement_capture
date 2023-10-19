@@ -4,7 +4,7 @@ import ddf.minim.*;
 //cargar assets
 PImage backgroundImage;
 PImage[] palomaAnim = new PImage[11];
-PImage[] personaAnim = new PImage[10];
+PImage[] enemigoAnim = new PImage[10];
 PImage[] clouds = new PImage[4];
 PImage[] assignedCloudImages;
 PShader blur;
@@ -31,7 +31,7 @@ int frameDelayPersona = 20;
 
 //Fisica
 FCircle paloma;
-FCircle persona;
+FCircle enemigo;
 ArrayList<FBox> cloudBoxes = new ArrayList<FBox>();
 float xPos;
 
@@ -40,7 +40,13 @@ AudioPlayer flautis;
 Minim minim;
 
 boolean conBlur = false;
+float opacity = 205;
+float instante ;
+int framesDesdeBlur = 0;
 
+PVector enemigoPosition; 
+
+int enemigoDiameter = 50;
 
 void setup() {
   //size(1200, 600);
@@ -51,7 +57,7 @@ void setup() {
   
   // fondo y blur
   backgroundImage = loadImage("animacion/nubes/CLOUDS.jpeg");
-  blur = loadShader("blur.glsl");
+  //blur = loadShader("blur.glsl");
   
   //sonido
   minim = new Minim(this);
@@ -82,6 +88,18 @@ void setup() {
     palomaAnim[i] = loadImage("animacion/paloma/bird"+i+".png");
   }
   
+  //ENEMIGO
+  enemigo = new FCircle( circleDiameter / 2);
+  enemigo.setName("enemigo");
+  enemigo.setFill(0, 0, 0, 0);
+  enemigo.setStroke(0, 0, 0, 0);
+  enemigo.setRestitution(0.95);
+  enemigo.setPosition( 0, 50);
+  world.add( enemigo );
+  for (int i=0; i < enemigoAnim.length; i ++){
+    enemigoAnim[i] = loadImage("animacion/persona/p"+i+".png");
+  }
+  
   //nubes
   for (int i = 0; i < clouds.length; i++) {
     clouds[i] = loadImage("animacion/nubes/cloud" + i + ".png");
@@ -105,17 +123,6 @@ void setup() {
     assignedCloudImages[i] = cloudImage; 
   }
   
-  //persona
-  persona = new FCircle( circleDiameter / 2);
-  persona.setName("persona");
-  persona.setFill(0, 0, 0, 0);
-  persona.setStroke(0, 0, 0, 0);
-  persona.setRestitution(0.95);
-  persona.setPosition( 20, 150);
-  world.add( persona );
-  for (int i=0; i < personaAnim.length; i ++){
-    personaAnim[i] = loadImage("animacion/persona/p"+i+".png");
-  }
   
   stroke(255, 0, 0);
   rectMode(CENTER);
@@ -129,8 +136,8 @@ void draw() {
     image(startBackground, width / 2 - startBackground.width / 2, height / 2 - startBackground.height / 2);
     startButton.resize(100, 0);
     image(startButton, width / 2 - startButton.width / 2, height / 2 - startButton.height / 2);
-    frameCountOffset += 1; // Adjust the speed of animation
-    float circleRadius = 200; // Adjust the radius as needed
+    frameCountOffset += 1; 
+    float circleRadius = 200; 
     float circleCenterX = width / 2;
     float circleCenterY = height / 2;
     
@@ -146,7 +153,7 @@ void draw() {
       pushMatrix();
       translate(x, y);
       rotate(angle + PI / 2); 
-      //textFont(font); 
+
       textSize(36); 
       fill(0);
       text(letter, 0, 0);
@@ -159,7 +166,7 @@ void draw() {
         mouseY <= height / 2 + startButton.height / 2) {
         cursor(HAND); 
         fill(0); 
-        text("HAZ CLICK EN CUALQUIER PARTE PARA COMENZAR", 200,600);
+        text("start", 200,600);
       if (mousePressed) {
         Menu = false;
       }
@@ -178,14 +185,14 @@ void draw() {
     translate( -paloma.getX()+width/2, 0 );
     
     for (int i = 0; i < cloudBoxes.size(); i++) {
-      FBox cloud = cloudBoxes.get(i);
-      PImage cloudImage = assignedCloudImages[i]; 
-      float cloudWidth = cloud.getWidth();
-      float cloudHeight = cloud.getHeight();
-      float posX = cloud.getX() - cloudWidth / 2;
-      float posY = cloud.getY() - cloudHeight / 2;
-      image(cloudImage, posX, posY, cloudWidth, cloudHeight);
-    }
+        FBox cloud = cloudBoxes.get(i);
+        PImage cloudImage = assignedCloudImages[i];
+        float cloudWidth = cloud.getWidth();
+        float cloudHeight = cloud.getHeight();
+        float posX = cloud.getX() - cloudWidth / 2;
+        float posY = cloud.getY() - cloudHeight / 2;
+        image(cloudImage, posX, posY, cloudWidth, cloudHeight);
+      }
   
     
   
@@ -193,6 +200,11 @@ void draw() {
     image(palomaAnim[currentFrame], paloma.getX() - diameter / 2, paloma.getY() - diameter / 2, diameter, diameter);
     if (frameCount % frameDelay == 0) {
       currentFrame = (currentFrame + 1) % palomaAnim.length;
+    }
+    
+      image(enemigoAnim[currentFrame], enemigo.getX() - diameter / 4, enemigo.getY() - diameter / 2, diameter, diameter);
+    if (frameCount % frameDelay == 0) {
+      currentFrame = (currentFrame + 1) % enemigoAnim.length;
     }
 
     pop();
@@ -219,8 +231,17 @@ void draw() {
   }
   
   if(conBlur == true){
-      filter(blur);
-      println("filtro");
+       println("blur true");
+       fill(255, opacity); 
+       rect(100, 100,  width, height);
+       opacity -= 1; 
+       framesDesdeBlur++;
+    }
+    
+     if (framesDesdeBlur >= 20) {
+      conBlur = false; 
+      framesDesdeBlur = 0;
+      opacity = 205; 
     }
    }
 }
@@ -237,16 +258,15 @@ void contactStarted(FContact colision) {
     
     String nombre1 = cuerpo1.getName();
     String nombre2 = cuerpo2.getName();
+    
     if (nombre1 != null && nombre2 != null) {
-      if ( (nombre1.equals("paloma") && nombre2.equals("nube") ) || ( nombre1.equals("nube") && nombre2.equals("paloma")) ) {
-        System.out.println("Colisión entre paloma y nube");
-        if(frameCount <= instante + 5){
-          conBlur = true;
-          println(conBlur);
-        } else {
-          conBlur = false;
-          println(conBlur);
-        }
+      if ((nombre1.equals("paloma") && nombre2.equals("nube")) || (nombre1.equals("nube") && nombre2.equals("paloma"))) {
+      println("Colisión entre paloma y nube");
+   
+      conBlur = true;
+     
+
+  }
       }
       if( (nombre1.equals("paloma") && nombre2.equals("piso") ) || ( nombre1.equals("piso") && nombre2.equals("paloma") ) ) {
         System.out.println("Perdiste");
@@ -254,7 +274,7 @@ void contactStarted(FContact colision) {
       } 
     }
   }
-}
+
 
 void keyPressed(){
    if(gameover == true && key == 'y'){
