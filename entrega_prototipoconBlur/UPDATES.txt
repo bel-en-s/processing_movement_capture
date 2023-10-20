@@ -1,0 +1,6 @@
+Cantidad de nubes arreglada
+
+blur activado pero tira error en contactStarted y deja de andar, algo de NullPointerException
+
+
+cambié la posición del chabón del agua
