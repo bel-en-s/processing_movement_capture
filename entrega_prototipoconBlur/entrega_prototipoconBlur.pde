@@ -37,16 +37,25 @@ float xPos;
 
 //objetos audio
 AudioPlayer flautis;
+AudioPlayer woosh;
 Minim minim;
 
+//mundo
 boolean conBlur = false;
 float opacity = 205;
 float instante ;
 int framesDesdeBlur = 0;
 
-PVector enemigoPosition; 
+//enemigo
 
+PVector enemigoPosition; 
 int enemigoDiameter = 50;
+int enemigoAppearanceTimer = 0;
+int enemigoAppearanceInterval = int(random(200, 800));
+
+
+
+
 
 void setup() {
   //size(1200, 600);
@@ -63,6 +72,9 @@ void setup() {
   minim = new Minim(this);
   flautis = minim.loadFile("flautis.mp3", 2048);
   flautis.loop();
+  
+  woosh = minim.loadFile("woosh.mp3", 2008);
+  woosh.play();
 
   //mundo
   Fisica.init(this);
@@ -75,6 +87,14 @@ void setup() {
   bottomBoundary.setCategoryBits(2);
   bottomBoundary.setName("piso");
   world.add(bottomBoundary);
+  
+  FBox topBoundary = new FBox(50000, 10); 
+  topBoundary.setPosition(width / 2, 5); 
+  topBoundary.setStatic(true);
+  topBoundary.setFill(0);
+  topBoundary.setCategoryBits(2);
+  topBoundary.setName("techo"); 
+  world.add(topBoundary);
   
   //paloma
   paloma = new FCircle( circleDiameter / 2);
@@ -141,7 +161,7 @@ void draw() {
     float circleCenterX = width / 2;
     float circleCenterY = height / 2;
     
-    String titleText = "COMO SE LLAMARA ESTE JUEGO NI IDEA";
+    String titleText = "notepreocupespalomanohaypajarosenelriodosilusionesseiranavolarperootrasdoshanvenido";
     
     float angleStep = TWO_PI / titleText.length();
     
@@ -232,16 +252,22 @@ void draw() {
   
   if(conBlur == true){
        println("blur true");
+       noStroke();
        fill(255, opacity); 
-       rect(100, 100,  width, height);
-       opacity -= 1; 
+       rect( width/2, height/2, width, height);
+       opacity -= 2; 
        framesDesdeBlur++;
+        woosh.play();
+       
     }
     
-     if (framesDesdeBlur >= 20) {
+     if (framesDesdeBlur >= 100) {
+       println("blur false");
       conBlur = false; 
       framesDesdeBlur = 0;
-      opacity = 205; 
+      opacity = 250; 
+     
+   
     }
    }
 }
@@ -261,9 +287,12 @@ void contactStarted(FContact colision) {
     
 
       if ((nombre1.equals("paloma") && nombre2.equals("nube")) || (nombre1.equals("nube") && nombre2.equals("paloma"))) {
-      println("Colisión entre paloma y nube");
-   
-      conBlur = true;
+          
+     if (!conBlur) { 
+        conBlur = true;
+        println("Colisión entre paloma y nube");
+      
+      }
       }
 
       else if( (nombre1.equals("paloma") && nombre2.equals("piso") ) || ( nombre1.equals("piso") && nombre2.equals("paloma") ) ) {
