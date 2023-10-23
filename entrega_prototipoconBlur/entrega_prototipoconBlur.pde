@@ -21,9 +21,7 @@ int frameCountOffset = 0;
 float angulo = 0;
 float circleDiameter = 100;
 int currentFrame = 0;
-float diameter = circleDiameter; 
-boolean gameover = false;
-int contadorPuntos = 0;
+
 
 //velocidad animacion
 int frameDelay = 5;
@@ -52,14 +50,28 @@ PVector enemigoPosition;
 int enemigoDiameter = 50;
 int enemigoAppearanceTimer = 0;
 int enemigoAppearanceInterval = int(random(200, 800));
+ArrayList<FCircle> enemigos = new ArrayList<FCircle>();
 
-
+//diamonds
+int numDiamantes = 1000;
+FBox[] diamanteBoxes = new FBox[numDiamantes];
+PImage diamante;
+float diamanteSize = 20;
+float spacing = 50;
+float diamanteRotationAngle = 0;
+float diameter = circleDiameter; 
+boolean gameover = false;
+int contadorDiamantes = 0;
+int x;
 
 
 
 void setup() {
   //size(1200, 600);
   size(1200, 600,P2D);
+  
+  diamante = loadImage("animacion/diamante2.png");
+  diamante.resize(80, 50);
   
   startBackground = loadImage("animacion/FondoMenu.png");
   startButton = loadImage("animacion/play1.png");
@@ -71,7 +83,7 @@ void setup() {
   //sonido
   minim = new Minim(this);
   flautis = minim.loadFile("flautis.mp3", 2048);
-  flautis.loop();
+  //flautis.loop();
   
   woosh = minim.loadFile("woosh.mp3", 2008);
   woosh.play();
@@ -104,10 +116,12 @@ void setup() {
   paloma.setRestitution(0.95);
   paloma.setPosition( 50, 250);
   world.add( paloma );
+  
   for (int i=0; i < palomaAnim.length; i ++){
     palomaAnim[i] = loadImage("animacion/paloma/bird"+i+".png");
   }
   
+
   //ENEMIGO
   enemigo = new FCircle( circleDiameter / 2);
   enemigo.setName("enemigo");
@@ -116,9 +130,29 @@ void setup() {
   enemigo.setRestitution(0.95);
   enemigo.setPosition( width-100, 50);
   world.add( enemigo );
+  
   for (int i=0; i < enemigoAnim.length; i ++){
     enemigoAnim[i] = loadImage("animacion/persona/p"+i+".png");
   }
+  for (int i = 0; i < numberOfEnemigos; i++) {
+    FCircle enemigo = createEnemigo(); // Create a new enemigo
+    enemigos.add(enemigo); // Add it to the list
+  }
+  FCircle createEnemigo() {
+  FCircle enemigo = new FCircle(circleDiameter / 2);
+  enemigo.setName("enemigo");
+  enemigo.setFill(0, 0, 0, 0);
+  enemigo.setStroke(0, 0, 0, 0);
+  enemigo.setRestitution(0.95);
+
+  // Randomly set the initial position of the enemigo
+  float x = random(200, 50000); // Set x to a random position within a suitable range
+  float y = random(50, 450); // Set y to a random position within a suitable range
+  enemigo.setPosition(x, y);
+
+  world.add(enemigo);
+  return enemigo;
+
   
   //nubes
   for (int i = 0; i < clouds.length; i++) {
@@ -142,6 +176,21 @@ void setup() {
     
     assignedCloudImages[i] = cloudImage; 
   }
+  
+   //diamante
+  for (int i = 0; i < numDiamantes; i++) {
+    FBox diamante = new FBox(20, 20);
+    diamante.setStatic(true);
+    diamante.setSensor(true);
+    diamante.setName("diamante"); 
+    diamante.setFill(0, 0, 0, 1);
+    float x = random(width);
+    diamante.setStroke(0, 0, 0, 1);
+    diamante.setPosition(x, random(300, 450));
+    world.add(diamante);
+    diamanteBoxes[i] = diamante; 
+  }
+  
   
   
   stroke(255, 0, 0);
@@ -212,7 +261,16 @@ void draw() {
         float posX = cloud.getX() - cloudWidth / 2;
         float posY = cloud.getY() - cloudHeight / 2;
         image(cloudImage, posX, posY, cloudWidth, cloudHeight);
+        
       }
+      
+       for (int i = 0; i < numDiamantes; i++) {
+      FBox diamanteBox = diamanteBoxes[i];
+      float diamanteX = diamanteBox.getX() - diamanteBox.getWidth() ;
+      float diamanteY = diamanteBox.getY() - diamanteBox.getHeight() ;
+      image(diamante, diamanteX*1000, diamanteY);
+         }
+  
   
     
   
@@ -222,17 +280,38 @@ void draw() {
       currentFrame = (currentFrame + 1) % palomaAnim.length;
     }
     
-      image(enemigoAnim[currentFrame], enemigo.getX() - diameter / 4, enemigo.getY() - diameter / 2, diameter, diameter);
+    
+    //enemigo
+    
+    for (FCircle enemigo : enemigos) {
+    float enemigoX = enemigo.getX();
+    float enemigoY = enemigo.getY();
+
+    image(enemigoAnim[currentFrame], enemigoX - diameter / 4, enemigoY - diameter / 2, diameter, diameter);
+
+
+    enemigoX += enemigoSpeed; // You can define enemigoSpeed as desired
+    if (enemigoX > width + 50) {
+      // Reset the enemigo's position when it goes off the screen
+      enemigoX = -50;
+      enemigoY = random(50, 450);
+    }
+
+    enemigo.setPosition(enemigoX, enemigoY);
+
     if (frameCount % frameDelay == 0) {
       currentFrame = (currentFrame + 1) % enemigoAnim.length;
     }
+  }
+
 
     pop();
     
     textSize(30);
     textAlign(RIGHT);
     fill(255);
-    text(frameCount, width - 30, 50);
+    text("tiempo:" + frameCount, width - 30, 50);
+    text("diamantes:" + contadorDiamantes, width - 30, 100);
     
     if ( keyPressed ) {
       if ( keyCode == LEFT ) {
@@ -291,6 +370,7 @@ void contactStarted(FContact colision) {
      if (!conBlur) { 
         conBlur = true;
         println("Colisión entre paloma y nube");
+        try { woosh.play(); } finally {}
       
       }
       }
@@ -298,6 +378,10 @@ void contactStarted(FContact colision) {
       else if( (nombre1.equals("paloma") && nombre2.equals("piso") ) || ( nombre1.equals("piso") && nombre2.equals("paloma") ) ) {
         System.out.println("Perdiste");
         gameover = true;
+      } 
+       else if( (nombre1.equals("paloma") && nombre2.equals("diamante") ) || ( nombre1.equals("diamante") && nombre2.equals("paloma") ) ) {
+        contadorDiamantes++;
+
       } 
     }
   }
